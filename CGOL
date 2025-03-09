@@ -1,9 +1,9 @@
 import numpy as np
 import pygame as pg
 
-size = int(input("How big do you want your array to be?: \t"))
+#size = int(input("How big do you want your array to be?: \t"))
 
-Board = np.zeros([size, size], "int")
+Board = np.zeros([30, 30], "int")   #Need to implement scaling for button presses
 CBoard = Board.copy()
 
 def adj(x, y, board):
@@ -30,19 +30,46 @@ def adj(x, y, board):
 
 pg.init()
 clock = pg.time.Clock()
-screen = pg.display.set_mode((int(size*50), int(size*50)))
+window = pg.display.set_mode((300, 300))
 running = True
+playing = False
+cycle = 0
 
 while running:
-    
+    clock.tick(100)
     for event in pg.event.get():
         if event.type == pg.QUIT:
             running = False
-        elif event.type == pg.MOUSEBUTTONUP:
-            x,y = event.pos
+        elif playing == False and event.type == pg.MOUSEBUTTONUP:
+            if event.button == 1:
+                row = event.pos[1] // 10
+                col = event.pos[0] // 10
+                if Board[row][col] == 1:
+                    Board[row][col] = 0
+                elif Board[row][col] == 0:
+                    Board[row][col] = 1
+        elif event.type == pg.KEYDOWN:
+            if event.key == pg.K_RETURN:
+                running = False
+                playing = True
+            
+    window.fill(0)
+    for iy, rowOfCells in enumerate(Board):
+        for ix, cell in enumerate(rowOfCells):
+            color = (64, 64, 64) if cell ==  1 else (164, 164, 164)
+            pg.draw.rect(window, color, (ix*10+1, iy*10+1, 9, 9))
+    pg.display.flip()
+
+while playing:  
+    for event in pg.event.get():
+        if event.type == pg.QUIT:
+            playing = False
     #Find next pattern
+    is_dead = True
     for x in range(1, len(Board) + 1):
         for y in range(1, len(Board[0]) + 1):
+            if Board[x-1, y-1] == 1:
+                is_dead = False
             if adj(x, y, Board) <= 1 or adj(x, y, Board) >= 4:
                 CBoard[x-1][y-1] = 0
             elif adj(x, y, Board) == 2:
@@ -50,12 +77,19 @@ while running:
             elif adj(x, y, Board) == 3:
                 CBoard[x-1][y-1] = 1
     
-    print(Board, "\n")
-    #pygame_img = pg.image.frombuffer(Board.tostring(), Board.shape[1::-1], "RGB")
-    #screen.blit(pg, (0, 0))
-    #pg.display.update()
+    window.fill(0)
+    for iy, rowOfCells in enumerate(Board):
+        for ix, cell in enumerate(rowOfCells):
+            color = (64, 64, 64) if cell ==  1 else (164, 164, 164)
+            pg.draw.rect(window, color, (ix*10+1, iy*10+1, 9, 9))
+    pg.display.flip()
+    
+    if is_dead:
+        print(f"All life ended, lasted {cycle} cycle(s)")
+        playing = 
+    
     np.copyto(Board, CBoard)
-    clock.tick(1)
+    clock.tick(4)
 
-
-#ToDo: Enable dynamic matrix input, create easy method of displaying matrix as pixels (grid)
+pg.quit()
+#ToDo: Enable zoom-in and zoom-out
