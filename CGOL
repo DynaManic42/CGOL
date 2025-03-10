@@ -32,21 +32,59 @@ pg.init()
 clock = pg.time.Clock()
 window_size = 900
 cell_size = (window_size / size)
-window = pg.display.set_mode((window_size, window_size))
+window = pg.display.set_mode((window_size, window_size), pg.RESIZABLE)
 running = True
+static = True
 playing = False
 Toggle = False
+modes = ["normal", "step"]
+game_mode = None
+step = True
+is_dead = True
 initial_state = 0
 cycle = 0
 
 while running:
-    clock.tick(100)
+    
+    
+    if game_mode == "step":
+        step = False
+    else:
+        step = True
     
     for event in pg.event.get():
         if event.type == pg.QUIT:
+            print(f"Quitting game, lasted {cycle} generations(s)")
+            playing = False
+            static = False
             running = False
+        
+        elif event.type == pg.VIDEORESIZE:
+            pg.display._resize_event(event)
+            window = pg.display.set_mode((event.w, event.h), pg.RESIZABLE)
+            window_size = min(event.w, event.h)
+            cell_size = (window_size / size)
             
-        elif playing == False and pg.mouse.get_pressed()[0]:
+        elif event.type == pg.KEYDOWN:
+            if event.key == pg.K_RETURN:
+                if game_mode != "normal":
+                    static = False
+                    running = True
+                    game_mode = "normal"
+                else:
+                    static = not static
+                    playing = not playing
+            elif event.key == pg.K_k:
+                game_mode = "step"
+                step = True
+                static = True
+                playing = True
+                
+
+    if static:
+        clock.tick(100)
+        
+        if pg.mouse.get_pressed()[0]:
             row = int(event.pos[1] // cell_size)
             col = int(event.pos[0] // cell_size)
             row = np.clip(row, 0, size)
@@ -63,40 +101,27 @@ while running:
                     Board[row][col] = 0
                 elif Board[row][col] == 0 and initial_state == 0:
                     Board[row][col] = 1
-                
                     
         elif event.type == pg.MOUSEBUTTONUP:
             Toggle = False
-            
-        elif event.type == pg.KEYDOWN:
-            if event.key == pg.K_RETURN:
-                running = False
-                playing = True
-            
-    window.fill(0)
-    for iy, rowOfCells in enumerate(Board):
-        for ix, cell in enumerate(rowOfCells):
-            color = (64, 64, 64) if cell ==  1 else (164, 164, 164)
-            pg.draw.rect(window, color, (ix*cell_size+cell_size//9, iy*cell_size+cell_size//9, cell_size - cell_size//9, cell_size - cell_size//9))
-    pg.display.flip()
 
-while playing:  
-    for event in pg.event.get():
-        if event.type == pg.QUIT:
-            print(f"Quitting game, lasted {cycle} generations(s)")
-            playing = False
-    #Find next pattern
-    is_dead = True
-    for x in range(1, len(Board) + 1):
-        for y in range(1, len(Board[0]) + 1):
-            if Board[x-1, y-1] == 1:
-                is_dead = False
-            if adj(x, y, Board) <= 1 or adj(x, y, Board) >= 4:
-                CBoard[x-1][y-1] = 0
-            elif adj(x, y, Board) == 2:
-                CBoard[x-1][y-1] = Board[x-1][y-1]
-            elif adj(x, y, Board) == 3:
-                CBoard[x-1][y-1] = 1
+    if playing and step:  
+            
+        is_dead = True
+        #Find next pattern
+        for x in range(1, len(Board) + 1):
+            for y in range(1, len(Board[0]) + 1):
+                if Board[x-1, y-1] == 1:
+                    is_dead = False
+                if adj(x, y, Board) <= 1 or adj(x, y, Board) >= 4:
+                    CBoard[x-1][y-1] = 0
+                elif adj(x, y, Board) == 2:
+                    CBoard[x-1][y-1] = Board[x-1][y-1]
+                elif adj(x, y, Board) == 3:
+                    CBoard[x-1][y-1] = 1
+        
+        np.copyto(Board, CBoard)
+        clock.tick(8)
     
     window.fill(0)
     for iy, rowOfCells in enumerate(Board):
@@ -104,21 +129,18 @@ while playing:
             color = (64, 64, 64) if cell ==  1 else (164, 164, 164)
             pg.draw.rect(window, color, (ix*cell_size+cell_size//9, iy*cell_size+cell_size//9, cell_size - cell_size//9, cell_size - cell_size//9))
     pg.display.flip()
-    
-    if is_dead:
-        print(f"All life ended, lasted {cycle} generations(s)")
-        playing = False
-    elif (CBoard == Board).all():
+        
+    if is_dead and cycle > 0:
+        print(f"All life ended, lasted {cycle} generation(s)")
+        running = False
+    elif (CBoard == Board).all() and cycle > 0:
         choice = str(input(f"All life stable, {cycle} generations(s) before stable. Do you wish to restart, continue, or quit (r/c/q)?: "))
         if choice == "r":
             pass               #change this
         elif choice == "c":
             pass
         elif choice == "q":
-            playing = False
-    
-    np.copyto(Board, CBoard)
-    clock.tick(8)
+            running = False
 
 pg.quit()
-#ToDo: Enable zoom-in and zoom-out, step function
+#ToDo: Enable zoom-in/ zoom-out, CLEAN UP CODE into functions
