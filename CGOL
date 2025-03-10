@@ -1,7 +1,7 @@
 import numpy as np
 import pygame as pg
 
-size = int(input("How big do you want your matrix to be?: \t"))
+size = int(input("How big do you want your matrix to be?: "))
 
 Board = np.zeros([size, size], "int")   #Need to implement scaling for different window sizes
 CBoard = Board.copy()
@@ -38,9 +38,9 @@ static = True
 playing = False
 Toggle = False
 modes = ["normal", "step"]
-game_mode = None
+game_mode = "normal"
 step = True
-is_dead = True
+is_dead = False
 initial_state = 0
 cycle = 0
 
@@ -120,7 +120,24 @@ while running:
                 elif adj(x, y, Board) == 3:
                     CBoard[x-1][y-1] = 1
         
-        np.copyto(Board, CBoard)
+        if is_dead and cycle > 0:
+            print(f"All life ended, lasted {cycle} generation(s)")
+            running = False
+        elif (CBoard == Board).all() == True and cycle > 0:
+            choice = str(input(f"All life stable, {cycle} generations(s) before stable. Do you wish to restart, continue, or quit (r/c/q)?: "))
+            if choice == "r":
+                np.copyto(Board, np.zeros([size, size], "int")) #change this
+                cycle = -1
+                static = True
+                playing = False
+            elif choice == "c":
+                pass
+            elif choice == "q":
+                running = False
+        else:
+            np.copyto(Board, CBoard)
+        
+        cycle += 1
         clock.tick(8)
     
     window.fill(0)
@@ -130,17 +147,6 @@ while running:
             pg.draw.rect(window, color, (ix*cell_size+cell_size//9, iy*cell_size+cell_size//9, cell_size - cell_size//9, cell_size - cell_size//9))
     pg.display.flip()
         
-    if is_dead and cycle > 0:
-        print(f"All life ended, lasted {cycle} generation(s)")
-        running = False
-    elif (CBoard == Board).all() and cycle > 0:
-        choice = str(input(f"All life stable, {cycle} generations(s) before stable. Do you wish to restart, continue, or quit (r/c/q)?: "))
-        if choice == "r":
-            pass               #change this
-        elif choice == "c":
-            pass
-        elif choice == "q":
-            running = False
 
 pg.quit()
 #ToDo: Enable zoom-in/ zoom-out, CLEAN UP CODE into functions
