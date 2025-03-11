@@ -1,10 +1,26 @@
 import numpy as np
 import pygame as pg
+from pathlib import Path
+import sys
 
-size = int(input("How big do you want your matrix to be?: "))
+source_dir = Path('all/')
+files = list(source_dir.glob('*.rle'))
+smaller_list = []
 
 Board = np.zeros([size, size], "int")   #Need to implement scaling for different window sizes
 CBoard = Board.copy()
+print(len(files))
+
+is_load = str(input("Do you want to load a pattern (y/n)?: "))
+if is_load == "y":
+    file_choice = str(input("Give the first letter(s) of pattern: "))
+    for file in files:
+        if str(file).split("\\")[1][0:len(file_choice)] == file_choice.lower():
+            smaller_list.append(file)
+    for file in smaller_list:
+        print(file, "\n")
+        
+size = int(input("How big do you want your matrix to be?: "))
 
 def adj(x, y, board):
     total = 0
